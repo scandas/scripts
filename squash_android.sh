@@ -9,27 +9,37 @@ SQUASHCYANOGEN=android_CM11_source-lz4.sq
 SQUASHLINEAGE=android_lineageos-cm11-lz4.sq
 
 function setup-lineage {
-	sudo mount -o ro $DATADIR/$SQUASHLINEAGE $LOWERDIR
-	sudo mount -t overlay ccache_overlay -o lowerdir=$LOWERDIR,upperdir=$UPPERDIR,workdir=$WORKDIR $OVERLAYDIR
+	if [[ ! `status` == "It's mounted." ]] ;then 
+		sudo mount -o ro $DATADIR/$SQUASHLINEAGE $LOWERDIR
+		sudo mount -t overlay android_overlay -o lowerdir=$LOWERDIR,upperdir=$UPPERDIR,workdir=$WORKDIR $OVERLAYDIR
+	else
+		echo "It seems, that there is already s setup run."
+		echo "Run \"$0 stop\" bevor you can run \"$0 setup-lineage\"."
+	fi
 }
 
 function setup-cyanogen {
-	sudo mount -o ro $DATADIR/$SQUASHCYANOGEN $LOWERDIR
-	sudo mount -t overlay ccache_overlay -o lowerdir=$LOWERDIR,upperdir=$UPPERDIR,workdir=$WORKDIR $OVERLAYDIR
+	if [[ `status` != "It's mounted." ]] ;then 
+		sudo mount -o ro $DATADIR/$SQUASHCYANOGEN $LOWERDIR
+		sudo mount -t overlay android_overlay -o lowerdir=$LOWERDIR,upperdir=$UPPERDIR,workdir=$WORKDIR $OVERLAYDIR
+	else
+		echo "It seems, that there is already s setup run."
+		echo "Run \"$0 stop\" bevor you can run \"$0 setup-cyanogen\"."
+	fi
 }
 
 function stop {
-	if [[ `status` == "It's mounted." ]] ;then 
+	#if [[ `status` == "It's mounted." ]] ;then 
 		sudo umount -l $OVERLAYDIR
 		sudo umount -l $LOWERDIR
-	fi
+	#fi
 }
 
 function update {
 	echo "Isn't implemented jet."
 	if [[ `status` == "not implemented" ]] ;then 
 		echo "updating..."
-		cd $CCACHEDIR
+		cd $OVERLAYDIR
 		echo "creating $SQUASHFILE.tmp..."
 		sudo mksquashfs ./ $DATADIR/$SQUASHFILE.tmp -comp lzo
 		sudo chown $USER:$USER $DATADIR/$SQUASHFILE.tmp
@@ -51,7 +61,7 @@ function update {
 
 function status {
 	#du -sh $UPPERDIR
-	if grep -qs "$OVERLAYDIR " /proc/mounts; then
+	if grep -qs "$LOWERDIR " /proc/mounts; then
 		echo "It's mounted."
 	else
 		echo "It's not mounted."
@@ -62,8 +72,11 @@ case "$1" in
 	setup-lineage)
 		setup-lineage
 		;;
-	stop)
+	setup-cyanogen)
 		setup-cyanogen
+		;;
+	stop)
+		stop
 		;;
 	status)
 		status
